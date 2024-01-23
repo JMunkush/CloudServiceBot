@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+
+  pg:
+    networks:
+      - mynetwork
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: cloudsaver
+
+  rabbitmq :
+    networks:
+      - mynetwork
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_DEFAULT_USER: "user"
+      RABBITMQ_DEFAULT_PASS: "pass"
+    ports:
+      - "15672:15672"
+
+  dispatcher:
+    depends_on:
+      - pg
+      - rabbitmq
+    networks:
+      - mynetwork
+    image: dispatcher-app
+    build:
+      context: ./dispatcher
+    environment:
+      BOT_TOKEN: your_bot_token
+      BOT_USERNAME: your_bot_username
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: pass
+
+  node:
+    depends_on:
+      - pg
+      - rabbitmq
+    networks:
+      - mynetwork
+    image: node-app
+    build:
+      context: ./node
+    environment:
+      PG_USER: postgres
+      PG_PASSWORD: root
+      PG_URL: jdbc:postgresql://pg:5432/cloudsaver
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: pass
+
+networks:
+  mynetwork:
